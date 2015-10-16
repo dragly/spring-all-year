@@ -247,40 +247,14 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
 {
     const int numSamples = buffer.getNumSamples();
     int channel, dp = 0;
-
-    // Go through the incoming data, and apply our gain to it...
-//    for (channel = 0; channel < getNumInputChannels(); ++channel)
-//        buffer.applyGain (channel, 0, buffer.getNumSamples(), gain->getValue());
-
-    // Now pass any incoming midi messages to our keyboard state object, and let it
-    // add messages to the buffer if the user is clicking on the on-screen keys
     keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
-
-    // and now get the synth to process these midi events and generate its output.
     synth.renderNextBlock (buffer, midiMessages, 0, numSamples);
 
-    // Apply our delay effect to the new output..
-    //    for (channel = 0; channel < getNumInputChannels(); ++channel)
-    //    {
-    //        float* channelData = buffer.getWritePointer (channel);
-    //        float* delayData = delayBuffer.getWritePointer (jmin (channel, delayBuffer.getNumChannels() - 1));
-    //        dp = delayPosition;
-
-    //        for (int i = 0; i < numSamples; ++i)
-    //        {
-    //            const float in = channelData[i];
-    //            channelData[i] += delayData[dp];
-    //            delayData[dp] = (delayData[dp] + in) * delay->getValue();
-    //            if (++dp >= delayBuffer.getNumSamples())
-    //                dp = 0;
-    //        }
-    //    }
-
-    //    delayPosition = dp;
     for (channel = 0; channel < getNumInputChannels(); channel++)
     {
         float* channelData = buffer.getWritePointer (channel);
         for(int sample = 0; sample < numSamples; sample++) {
+
             double eps = delay->getValue();
 
             std::vector<Particle> &particles = m_particles[channel];
