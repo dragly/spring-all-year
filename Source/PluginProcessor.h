@@ -107,6 +107,22 @@ private:
     Vector3D m_acceleration;
 };
 
+class Spring
+{
+public:
+    Spring(Particle* fromi, Particle* toi, double constant)
+        : from(fromi)
+        , to(toi)
+        , k(constant)
+    {
+
+    }
+
+    Particle* from;
+    Particle* to;
+    double k;
+};
+
 //==============================================================================
 /**
     As the name suggest, this class does the actual audio processing.
@@ -184,6 +200,7 @@ private:
     Synthesiser synth;
 
     std::vector<std::vector<Particle> > m_particles;
+    std::vector<std::vector<Spring> > m_springs;
 
     double values[2];
 

@@ -204,14 +204,21 @@ JuceDemoPluginAudioProcessor::JuceDemoPluginAudioProcessor()
 
     for(int i = 0; i < 2; i++) {
         m_particles.push_back(std::vector<Particle>());
-        Particle p1(Vector3D(0.0, 0.0, 0.0));
-        Particle p2(Vector3D(rmSigma*sigma, 0.0, 0.0));
-        Particle p3(Vector3D(-rmSigma*sigma, 0.0, 0.0));
-        Particle p4(Vector3D(-2.0*rmSigma*sigma, 0.0, 0.0));
+        m_springs.push_back(std::vector<Spring>());
+        Particle p0(Vector3D(0.0, 0.0, 0.0));
+        Particle p1(Vector3D(1.0, 0.0, 0.0));
+        Particle p2(Vector3D(2.0, 0.0, 0.0));
+//        Particle p4(Vector3D(-2.0, 0.0, 0.0));
+        m_particles[i].push_back(p0);
         m_particles[i].push_back(p1);
         m_particles[i].push_back(p2);
-        m_particles[i].push_back(p3);
-        m_particles[i].push_back(p4);
+//        m_particles[i].push_back(p4);
+
+        Spring s01(&m_particles[i][0], &m_particles[i][1], 1.0);
+        Spring s12(&m_particles[i][1], &m_particles[i][2], 1.0);
+
+        m_springs[i].push_back(s01);
+        m_springs[i].push_back(s12);
     }
 }
 
@@ -250,65 +257,57 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
     keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
     synth.renderNextBlock (buffer, midiMessages, 0, numSamples);
 
+
+    bool first = true;
     for (channel = 0; channel < getNumInputChannels(); channel++)
     {
         float* channelData = buffer.getWritePointer (channel);
         for(int sample = 0; sample < numSamples; sample++) {
 
-            double eps = delay->getValue();
-
             std::vector<Particle> &particles = m_particles[channel];
 
-            Particle &p0 = particles[0];
-            Particle &p1 = particles[1];
+            Particle &pFix = particles[0];
+            Particle &pOut = particles[1];
+            Particle &pIn = particles[2];
 
             for(Particle &p : particles) {
                 p.acceleration() = Vector3D(0.0, 0.0, 0.0);
             }
 
-            p1.position() = Vector3D(channelData[sample] + 1.0*sigma*rmSigma, 0.0, 0.0);
+            pFix.position() = Vector3D(0.0, 0.0, 0.0);
+            pIn.position() = Vector3D(channelData[sample] + 2.0, 0.0, 0.0);
 
-//            // Force calculation
-            for(int i = 0; i < particles.size(); i++) {
-                Particle &pa = particles[i];
-                for(int j = i + 1; j < particles.size(); j++) {
-                    Particle &pb = particles[j];
-                    double r = fabs(pb.position().x - pa.position().x);
+            for(Spring& spring : m_springs[channel]) {
+                Particle& pa = *spring.from;
+                Particle& pb = *spring.to;
 
-                    double r2 = r*r;
-                    double r6 = r2*r2*r2;
-                    double r12 = r6*r6;
-                    double sigma6 = sigma*sigma*sigma*sigma*sigma*sigma;
-                    double sigma12 = sigma6*sigma6;
+                double diff = pb.position().x - pa.position().x;
+                double r = fabs(diff);
 
-                    Vector3D force = Vector3D(-24*eps*(2*sigma12/r12 - sigma6/r6)*r, 0.0, 0.0);
-                    pa.acceleration() += force;
-                    pb.acceleration() -= force;
-                }
+                double d = 1.0;
+                double k = 1.0*delay->getValue();
+
+                Vector3D force = Vector3D(k*(r-d), 0.0, 0.0);
+                pa.acceleration() += force;
+                pb.acceleration() -= force;
             }
-
-            Vector3D equilPosition(channelData[sample], 0.0, 0.0);
-            Vector3D equilForce = -(p0.position()-equilPosition)*equilibriumFactor->getValue();
-            p0.acceleration() += equilForce;
 
 
             for(Particle &p : particles) {
                 p.velocity() *= velocityFactor->getValue();
                 p.velocity() += p.acceleration() * 0.1;
-                p.position() += p.velocity()*0.1;
+                p.position() += p.velocity() * 0.1;
             }
 
-            // Velocity and position
-//            for(Particle &p : m_particles[channel]) {
-//            }
+            if(first) {
+                DBG("Positions:");
+                DBG(pFix.position().x);
+                DBG(pOut.position().x);
+                DBG(pIn.position().x);
+                first = false;
+            }
 
-            channelData[sample] = p0.position().x;
-
-//            double factor = 0.5;
-//            values[channel] = channelData[sample]*(1-factor) + values[channel]*factor;
-//            channelData[sample] = values[channel];
-
-//            DBG(channelData[sample]);
+            channelData[sample] = pOut.position().x - 1.0;
         }
     }
 
