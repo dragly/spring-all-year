@@ -213,6 +213,9 @@ private:
 
     const int m_particleCount = 100;
 
+    double sigma = 0.8908987181403393;
+    double rmSigma = 1.122462048309373;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JuceDemoPluginAudioProcessor)
 };
 

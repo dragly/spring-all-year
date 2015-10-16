@@ -315,19 +315,11 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
                 pb->acceleration() -= force;
             }
 
-
             double maximumVelocity = 5.0;
             for(Particle& p : particles) {
                 p.velocity() *= velocityFactor->getValue();
                 p.velocity() += p.acceleration() * 0.1;
-//                if(p.velocity().Length() > maximumVelocity) {
-//                    p.velocity() = p.velocity() / p.velocity().Length() * maximumVelocity;
-//                }
                 p.position() += p.velocity() * 0.1;
-            }
-
-            if(first) {
-                first = false;
             }
 
             channelData[sample] = pOut->position().x - 1.0;
