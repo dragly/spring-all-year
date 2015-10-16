@@ -13,6 +13,8 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
+#include <deque>
+
 // Geometry Declarations
 class Vector3D {
 public:
@@ -188,7 +190,7 @@ public:
 
     // Our parameters
     AudioProcessorParameter* equilibriumFactor;
-    AudioProcessorParameter* delay;
+    AudioProcessorParameter* springConstant;
     AudioProcessorParameter* velocityFactor;
 
 private:
@@ -199,13 +201,17 @@ private:
     // the synth!
     Synthesiser synth;
 
-    std::vector<std::vector<Particle> > m_particles;
-    std::vector<std::vector<Spring> > m_springs;
+    std::deque<std::deque<Particle> > m_particles;
+    std::deque<std::deque<Spring> > m_springs;
+
+
+    std::vector<Particle*> m_fixedParticle;
+    std::vector<Particle*> m_inputParticle;
+    std::vector<Particle*> m_outputParticle;
 
     double values[2];
 
-    double sigma = 10.0;
-    double rmSigma = 1.122462048309373;
+    const int m_particleCount = 100;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JuceDemoPluginAudioProcessor)
 };

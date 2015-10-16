@@ -17,7 +17,7 @@ JuceDemoPluginAudioProcessorEditor::JuceDemoPluginAudioProcessorEditor (JuceDemo
       midiKeyboard (owner.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
       infoLabel (String::empty),
       equilibriumLabel ("", "Equilibrium:"),
-      lennardLabel ("", "Lennard:"),
+      lennardLabel ("", "Spring constant:"),
       equilibriumSlider ("gain"),
       lennardSlider ("delay"),
       velocitySlider ("velocity")
@@ -31,12 +31,12 @@ JuceDemoPluginAudioProcessorEditor::JuceDemoPluginAudioProcessorEditor (JuceDemo
     addAndMakeVisible (lennardSlider);
     lennardSlider.setSliderStyle (Slider::Rotary);
     lennardSlider.addListener (this);
-    lennardSlider.setRange (0.0, 0.1, 0.001);
+    lennardSlider.setRange (0.01, 2.0, 0.001);
 
     addAndMakeVisible (velocitySlider);
     velocitySlider.setSliderStyle (Slider::Rotary);
     velocitySlider.addListener (this);
-    velocitySlider.setRange (0.9, 0.999, 0.001);
+    velocitySlider.setRange (0.90, 1.0 - 0.0001, 0.0001);
 
     // add some labels for the sliders..
     equilibriumLabel.attachToComponent (&equilibriumSlider, false);
@@ -103,7 +103,7 @@ void JuceDemoPluginAudioProcessorEditor::timerCallback()
         displayPositionInfo (newPos);
 
     equilibriumSlider.setValue (ourProcessor.equilibriumFactor->getValue(), dontSendNotification);
-    lennardSlider.setValue (ourProcessor.delay->getValue(), dontSendNotification);
+    lennardSlider.setValue (ourProcessor.springConstant->getValue(), dontSendNotification);
     velocitySlider.setValue (ourProcessor.velocityFactor->getValue(), dontSendNotification);
 }
 
@@ -179,7 +179,7 @@ AudioProcessorParameter* JuceDemoPluginAudioProcessorEditor::getParameterFromSli
         return getProcessor().equilibriumFactor;
 
     if (slider == &lennardSlider)
-        return getProcessor().delay;
+        return getProcessor().springConstant;
 
     if (slider == &velocitySlider)
         return getProcessor().velocityFactor;

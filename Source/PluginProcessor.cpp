@@ -187,7 +187,7 @@ JuceDemoPluginAudioProcessor::JuceDemoPluginAudioProcessor()
 {
     // Set up our parameters. The base class will delete them for us.
     addParameter (equilibriumFactor  = new FloatParameter (defaultGain,  "Gain"));
-    addParameter (delay = new FloatParameter (defaultDelay, "Delay"));
+    addParameter (springConstant = new FloatParameter (defaultDelay, "Delay"));
     addParameter (velocityFactor = new FloatParameter (defaultDelay, "Velocity"));
 
     lastUIWidth = 1000;
@@ -202,23 +202,48 @@ JuceDemoPluginAudioProcessor::JuceDemoPluginAudioProcessor()
 
     synth.addSound (new SineWaveSound());
 
+    const int n = m_particleCount;
     for(int i = 0; i < 2; i++) {
-        m_particles.push_back(std::vector<Particle>());
-        m_springs.push_back(std::vector<Spring>());
-        Particle p0(Vector3D(0.0, 0.0, 0.0));
-        Particle p1(Vector3D(1.0, 0.0, 0.0));
-        Particle p2(Vector3D(2.0, 0.0, 0.0));
-//        Particle p4(Vector3D(-2.0, 0.0, 0.0));
-        m_particles[i].push_back(p0);
-        m_particles[i].push_back(p1);
-        m_particles[i].push_back(p2);
-//        m_particles[i].push_back(p4);
+        m_particles.push_back(std::deque<Particle>());
+        m_springs.push_back(std::deque<Spring>());
 
-        Spring s01(&m_particles[i][0], &m_particles[i][1], 1.0);
-        Spring s12(&m_particles[i][1], &m_particles[i][2], 1.0);
+        std::deque<Particle>& particles = m_particles.back();
+        std::deque<Spring>& springs = m_springs.back();
 
-        m_springs[i].push_back(s01);
-        m_springs[i].push_back(s12);
+//        particles.resize(n);
+//        springs.resize(n*2);
+
+        Particle *p = &particles.back();
+        Particle *pprev = &particles.back();
+
+        particles.push_back(Particle(Vector3D(0.0, 0.0, 0.0)));
+        Particle* fixedParticle = &particles.back();
+        m_fixedParticle.push_back(fixedParticle);
+
+
+        particles.push_back(Particle(Vector3D(1.0, 0.0, 0.0)));
+        Particle* outputParticle = &particles.back();
+        m_outputParticle.push_back(outputParticle);
+
+        pprev = fixedParticle;
+        p = outputParticle;
+
+        springs.push_back(Spring(pprev, p, 1.0));
+
+        pprev = p;
+        for(int j = 2; j < n; j++) {
+            particles.push_back(Particle(Vector3D(j, 0.0, 0.0)));
+            p = &particles.back();
+            springs.push_back(Spring(pprev, p, 1.0));
+            pprev = p;
+        }
+
+        particles.push_back(Particle(Vector3D(n, 0.0, 0.0)));
+        Particle* pn = &particles.back();
+        Particle* inputParticle = pn;
+        m_inputParticle.push_back(inputParticle);
+        springs.push_back(Spring(pprev, pn, 1.0));
+//        Spring &sn = springs.back();
     }
 }
 
@@ -253,61 +278,59 @@ void JuceDemoPluginAudioProcessor::reset()
 void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
 {
     const int numSamples = buffer.getNumSamples();
-    int channel, dp = 0;
     keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
     synth.renderNextBlock (buffer, midiMessages, 0, numSamples);
 
 
-    bool first = true;
-    for (channel = 0; channel < getNumInputChannels(); channel++)
+    for (int channel = 0; channel < getNumInputChannels(); channel++)
     {
+        bool first = true;
         float* channelData = buffer.getWritePointer (channel);
+        std::deque<Particle> &particles = m_particles[channel];
         for(int sample = 0; sample < numSamples; sample++) {
 
-            std::vector<Particle> &particles = m_particles[channel];
+            Particle* pFix = m_fixedParticle[channel];
+            Particle* pOut = m_outputParticle[channel];
+            Particle* pIn = m_inputParticle[channel];
 
-            Particle &pFix = particles[0];
-            Particle &pOut = particles[1];
-            Particle &pIn = particles[2];
-
-            for(Particle &p : particles) {
+            for(Particle& p : particles) {
                 p.acceleration() = Vector3D(0.0, 0.0, 0.0);
             }
 
-            pFix.position() = Vector3D(0.0, 0.0, 0.0);
-            pIn.position() = Vector3D(channelData[sample] + 2.0, 0.0, 0.0);
+            pFix->position() = Vector3D(0.0, 0.0, 0.0);
+            pIn->position() = Vector3D(channelData[sample] + m_particleCount, 0.0, 0.0);
 
             for(Spring& spring : m_springs[channel]) {
-                Particle& pa = *spring.from;
-                Particle& pb = *spring.to;
+                Particle* pa = spring.from;
+                Particle* pb = spring.to;
 
-                double diff = pb.position().x - pa.position().x;
+                double diff = pb->position().x - pa->position().x;
                 double r = fabs(diff);
 
                 double d = 1.0;
-                double k = 1.0*delay->getValue();
+                double k = spring.k*springConstant->getValue();
 
                 Vector3D force = Vector3D(k*(r-d), 0.0, 0.0);
-                pa.acceleration() += force;
-                pb.acceleration() -= force;
+                pa->acceleration() += force;
+                pb->acceleration() -= force;
             }
 
 
-            for(Particle &p : particles) {
+            double maximumVelocity = 5.0;
+            for(Particle& p : particles) {
                 p.velocity() *= velocityFactor->getValue();
                 p.velocity() += p.acceleration() * 0.1;
+//                if(p.velocity().Length() > maximumVelocity) {
+//                    p.velocity() = p.velocity() / p.velocity().Length() * maximumVelocity;
+//                }
                 p.position() += p.velocity() * 0.1;
             }
 
             if(first) {
-                DBG("Positions:");
-                DBG(pFix.position().x);
-                DBG(pOut.position().x);
-                DBG(pIn.position().x);
                 first = false;
             }
 
-            channelData[sample] = pOut.position().x - 1.0;
+            channelData[sample] = pOut->position().x - 1.0;
         }
     }
 
@@ -351,7 +374,7 @@ void JuceDemoPluginAudioProcessor::getStateInformation (MemoryBlock& destData)
     xml.setAttribute ("uiWidth", lastUIWidth);
     xml.setAttribute ("uiHeight", lastUIHeight);
     xml.setAttribute ("gain", equilibriumFactor->getValue());
-    xml.setAttribute ("delay", delay->getValue());
+    xml.setAttribute ("delay", springConstant->getValue());
     xml.setAttribute ("velocity", velocityFactor->getValue());
 
     // then use this helper function to stuff it into the binary blob and return it..
@@ -376,7 +399,7 @@ void JuceDemoPluginAudioProcessor::setStateInformation (const void* data, int si
             lastUIHeight = xmlState->getIntAttribute ("uiHeight", lastUIHeight);
 
             equilibriumFactor->setValue ((float) xmlState->getDoubleAttribute ("gain", equilibriumFactor->getValue()));
-            delay->setValue ((float) xmlState->getDoubleAttribute ("delay", delay->getValue()));
+            springConstant->setValue ((float) xmlState->getDoubleAttribute ("delay", springConstant->getValue()));
             velocityFactor->setValue ((float) xmlState->getDoubleAttribute ("velocity", velocityFactor->getValue()));
         }
     }
