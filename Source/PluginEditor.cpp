@@ -16,22 +16,22 @@ JuceDemoPluginAudioProcessorEditor::JuceDemoPluginAudioProcessorEditor (JuceDemo
     : AudioProcessorEditor (owner),
       midiKeyboard (owner.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
       infoLabel (String::empty),
-      equilibriumLabel ("", "Equilibrium:"),
+      offsetLabel ("", "Offset:"),
       lennardLabel ("", "Spring constant:"),
-      equilibriumSlider ("gain"),
-      lennardSlider ("delay"),
+      offsetSlider ("offset"),
+      springConstantSlider ("spring"),
       velocitySlider ("velocity")
 {
     // add some sliders..
-    addAndMakeVisible (equilibriumSlider);
-    equilibriumSlider.setSliderStyle (Slider::Rotary);
-    equilibriumSlider.addListener (this);
-    equilibriumSlider.setRange (0.0, 10.0, 0.01);
+    addAndMakeVisible (offsetSlider);
+    offsetSlider.setSliderStyle (Slider::Rotary);
+    offsetSlider.addListener (this);
+    offsetSlider.setRange (0.0, 10.0, 0.01);
 
-    addAndMakeVisible (lennardSlider);
-    lennardSlider.setSliderStyle (Slider::Rotary);
-    lennardSlider.addListener (this);
-    lennardSlider.setRange (0.01, 2.0, 0.001);
+    addAndMakeVisible (springConstantSlider);
+    springConstantSlider.setSliderStyle (Slider::Rotary);
+    springConstantSlider.addListener (this);
+    springConstantSlider.setRange (0.01, 2.0, 0.001);
 
     addAndMakeVisible (velocitySlider);
     velocitySlider.setSliderStyle (Slider::Rotary);
@@ -39,10 +39,10 @@ JuceDemoPluginAudioProcessorEditor::JuceDemoPluginAudioProcessorEditor (JuceDemo
     velocitySlider.setRange (0.90, 1.0 - 0.0001, 0.0001);
 
     // add some labels for the sliders..
-    equilibriumLabel.attachToComponent (&equilibriumSlider, false);
-    equilibriumLabel.setFont (Font (11.0f));
+    offsetLabel.attachToComponent (&offsetSlider, false);
+    offsetLabel.setFont (Font (11.0f));
 
-    lennardLabel.attachToComponent (&lennardSlider, false);
+    lennardLabel.attachToComponent (&springConstantSlider, false);
     lennardLabel.setFont (Font (11.0f));
 
     // add the midi keyboard component..
@@ -78,8 +78,8 @@ void JuceDemoPluginAudioProcessorEditor::paint (Graphics& g)
 void JuceDemoPluginAudioProcessorEditor::resized()
 {
     infoLabel.setBounds (10, 4, 600, 25);
-    equilibriumSlider.setBounds (20, 60, 150, 40);
-    lennardSlider.setBounds (200, 60, 150, 40);
+    offsetSlider.setBounds (20, 60, 150, 40);
+    springConstantSlider.setBounds (200, 60, 150, 40);
     velocitySlider.setBounds (400, 60, 150, 40);
 
     const int keyboardHeight = 70;
@@ -97,13 +97,8 @@ void JuceDemoPluginAudioProcessorEditor::timerCallback()
 {
     JuceDemoPluginAudioProcessor& ourProcessor = getProcessor();
 
-    AudioPlayHead::CurrentPositionInfo newPos (ourProcessor.lastPosInfo);
-
-    if (lastDisplayedPosition != newPos)
-        displayPositionInfo (newPos);
-
-    equilibriumSlider.setValue (ourProcessor.equilibriumFactor->getValue(), dontSendNotification);
-    lennardSlider.setValue (ourProcessor.springConstant->getValue(), dontSendNotification);
+    offsetSlider.setValue (ourProcessor.offset->getValue(), dontSendNotification);
+    springConstantSlider.setValue (ourProcessor.springConstant->getValue(), dontSendNotification);
     velocitySlider.setValue (ourProcessor.velocityFactor->getValue(), dontSendNotification);
 }
 
@@ -135,75 +130,16 @@ void JuceDemoPluginAudioProcessorEditor::sliderDragEnded (Slider* slider)
     }
 }
 
-//==============================================================================
-// quick-and-dirty function to format a timecode string
-static String timeToTimecodeString (const double seconds)
-{
-    const double absSecs = std::abs (seconds);
-
-    const int hours =  (int) (absSecs / (60.0 * 60.0));
-    const int mins  = ((int) (absSecs / 60.0)) % 60;
-    const int secs  = ((int) absSecs) % 60;
-
-    String s (seconds < 0 ? "-" : "");
-
-    s << String (hours).paddedLeft ('0', 2) << ":"
-      << String (mins) .paddedLeft ('0', 2) << ":"
-      << String (secs) .paddedLeft ('0', 2) << ":"
-      << String (roundToInt (absSecs * 1000) % 1000).paddedLeft ('0', 3);
-
-    return s;
-}
-
-// quick-and-dirty function to format a bars/beats string
-static String ppqToBarsBeatsString (double ppq, double /*lastBarPPQ*/, int numerator, int denominator)
-{
-    if (numerator == 0 || denominator == 0)
-        return "1|1|0";
-
-    const int ppqPerBar = (numerator * 4 / denominator);
-    const double beats  = (fmod (ppq, ppqPerBar) / ppqPerBar) * numerator;
-
-    const int bar    = ((int) ppq) / ppqPerBar + 1;
-    const int beat   = ((int) beats) + 1;
-    const int ticks  = ((int) (fmod (beats, 1.0) * 960.0 + 0.5));
-
-    String s;
-    s << bar << '|' << beat << '|' << ticks;
-    return s;
-}
-
 AudioProcessorParameter* JuceDemoPluginAudioProcessorEditor::getParameterFromSlider (const Slider* slider) const
 {
-    if (slider == &equilibriumSlider)
-        return getProcessor().equilibriumFactor;
+    if (slider == &offsetSlider)
+        return getProcessor().offset;
 
-    if (slider == &lennardSlider)
+    if (slider == &springConstantSlider)
         return getProcessor().springConstant;
 
     if (slider == &velocitySlider)
         return getProcessor().velocityFactor;
 
     return nullptr;
-}
-
-// Updates the text in our position label.
-void JuceDemoPluginAudioProcessorEditor::displayPositionInfo (const AudioPlayHead::CurrentPositionInfo& pos)
-{
-    lastDisplayedPosition = pos;
-    String displayText;
-    displayText.preallocateBytes (128);
-
-    displayText << String (pos.bpm, 2) << " bpm, "
-                << pos.timeSigNumerator << '/' << pos.timeSigDenominator
-                << "  -  " << timeToTimecodeString (pos.timeInSeconds)
-                << "  -  " << ppqToBarsBeatsString (pos.ppqPosition, pos.ppqPositionOfLastBarStart,
-                                                    pos.timeSigNumerator, pos.timeSigDenominator);
-
-    if (pos.isRecording)
-        displayText << "  (recording)";
-    else if (pos.isPlaying)
-        displayText << "  (playing)";
-
-    infoLabel.setText ("[" + SystemStats::getJUCEVersion() + "]   " + displayText, dontSendNotification);
 }

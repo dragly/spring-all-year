@@ -191,7 +191,7 @@ public:
     int lastUIWidth, lastUIHeight;
 
     // Our parameters
-    AudioProcessorParameter* equilibriumFactor;
+    AudioProcessorParameter* offset;
     AudioProcessorParameter* springConstant;
     AudioProcessorParameter* velocityFactor;
 

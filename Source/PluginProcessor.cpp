@@ -186,7 +186,7 @@ JuceDemoPluginAudioProcessor::JuceDemoPluginAudioProcessor()
     : delayBuffer (2, 12000)
 {
     // Set up our parameters. The base class will delete them for us.
-    addParameter (equilibriumFactor  = new FloatParameter (defaultGain,  "Gain"));
+    addParameter (offset  = new FloatParameter (defaultGain,  "Gain"));
     addParameter (springConstant = new FloatParameter (defaultDelay, "Delay"));
     addParameter (velocityFactor = new FloatParameter (defaultDelay, "Velocity"));
 
@@ -284,7 +284,6 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
 
     for (int channel = 0; channel < getNumInputChannels(); channel++)
     {
-        bool first = true;
         float* channelData = buffer.getWritePointer (channel);
         std::deque<Particle> &particles = m_particles[channel];
         for(int sample = 0; sample < numSamples; sample++) {
@@ -297,7 +296,7 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
             }
 
             pFix->position() = Vector3D(0.0, 0.0, 0.0);
-            pIn->position() = Vector3D(channelData[sample] + m_particleCount + equilibriumFactor->getValue(), 0.0, 0.0);
+            pIn->position() = Vector3D(channelData[sample] + m_particleCount + offset->getValue(), 0.0, 0.0);
 
             for(Spring& spring : m_springs[channel]) {
                 Particle* pa = spring.from;
@@ -314,7 +313,6 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
                 pb->acceleration() -= force;
             }
 
-            double maximumVelocity = 5.0;
             for(Particle& p : particles) {
                 p.velocity() *= velocityFactor->getValue();
                 p.velocity() += p.acceleration() * 0.1;
@@ -330,20 +328,6 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
     // guaranteed to be empty - they may contain garbage).
     for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-
-    // ask the host for the current time so we can display it...
-    AudioPlayHead::CurrentPositionInfo newTime;
-
-    if (getPlayHead() != nullptr && getPlayHead()->getCurrentPosition (newTime))
-    {
-        // Successfully got the current time from the host..
-        lastPosInfo = newTime;
-    }
-    else
-    {
-        // If the host fails to fill-in the current time, we'll just clear it to a default..
-        lastPosInfo.resetToDefault();
-    }
 }
 
 //==============================================================================
@@ -364,7 +348,7 @@ void JuceDemoPluginAudioProcessor::getStateInformation (MemoryBlock& destData)
     // add some attributes to it..
     xml.setAttribute ("uiWidth", lastUIWidth);
     xml.setAttribute ("uiHeight", lastUIHeight);
-    xml.setAttribute ("gain", equilibriumFactor->getValue());
+    xml.setAttribute ("gain", offset->getValue());
     xml.setAttribute ("delay", springConstant->getValue());
     xml.setAttribute ("velocity", velocityFactor->getValue());
 
@@ -389,7 +373,7 @@ void JuceDemoPluginAudioProcessor::setStateInformation (const void* data, int si
             lastUIWidth  = xmlState->getIntAttribute ("uiWidth", lastUIWidth);
             lastUIHeight = xmlState->getIntAttribute ("uiHeight", lastUIHeight);
 
-            equilibriumFactor->setValue ((float) xmlState->getDoubleAttribute ("gain", equilibriumFactor->getValue()));
+            offset->setValue ((float) xmlState->getDoubleAttribute ("gain", offset->getValue()));
             springConstant->setValue ((float) xmlState->getDoubleAttribute ("delay", springConstant->getValue()));
             velocityFactor->setValue ((float) xmlState->getDoubleAttribute ("velocity", velocityFactor->getValue()));
         }

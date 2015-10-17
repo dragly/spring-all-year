@@ -36,8 +36,8 @@ public:
 
 private:
     MidiKeyboardComponent midiKeyboard;
-    Label infoLabel, equilibriumLabel, lennardLabel;
-    Slider equilibriumSlider, lennardSlider, velocitySlider;
+    Label infoLabel, offsetLabel, lennardLabel;
+    Slider offsetSlider, springConstantSlider, velocitySlider;
     ScopedPointer<ResizableCornerComponent> resizer;
     ComponentBoundsConstrainer resizeLimits;
 
