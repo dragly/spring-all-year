@@ -112,17 +112,19 @@ private:
 class Spring
 {
 public:
-    Spring(Particle* fromi, Particle* toi, double constant)
+    Spring(Particle* fromi, Particle* toi, double constant, double equilibriumLength)
         : from(fromi)
         , to(toi)
         , k(constant)
+        , d(equilibriumLength)
     {
 
     }
 
-    Particle* from;
-    Particle* to;
-    double k;
+    Particle* from = nullptr;
+    Particle* to = nullptr;
+    double k = 1.0;
+    double d = 1.0;
 };
 
 //==============================================================================
@@ -211,7 +213,7 @@ private:
 
     double values[2];
 
-    const int m_particleCount = 100;
+    const int m_particleCount = 30;
 
     double sigma = 0.8908987181403393;
     double rmSigma = 1.122462048309373;

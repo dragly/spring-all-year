@@ -228,13 +228,13 @@ JuceDemoPluginAudioProcessor::JuceDemoPluginAudioProcessor()
         pprev = fixedParticle;
         p = outputParticle;
 
-        springs.push_back(Spring(pprev, p, 1.0));
+        springs.push_back(Spring(pprev, p, 1.0, 1.0));
 
         pprev = p;
         for(int j = 2; j < n; j++) {
             particles.push_back(Particle(Vector3D(j, 0.0, 0.0)));
             p = &particles.back();
-            springs.push_back(Spring(pprev, p, 1.0));
+            springs.push_back(Spring(pprev, p, 1.0, 1.0));
             pprev = p;
         }
 
@@ -242,7 +242,7 @@ JuceDemoPluginAudioProcessor::JuceDemoPluginAudioProcessor()
         Particle* pn = &particles.back();
         Particle* inputParticle = pn;
         m_inputParticle.push_back(inputParticle);
-        springs.push_back(Spring(pprev, pn, 1.0));
+        springs.push_back(Spring(pprev, pn, 1.0, 1.0));
 //        Spring &sn = springs.back();
     }
 }
@@ -288,7 +288,6 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
         float* channelData = buffer.getWritePointer (channel);
         std::deque<Particle> &particles = m_particles[channel];
         for(int sample = 0; sample < numSamples; sample++) {
-
             Particle* pFix = m_fixedParticle[channel];
             Particle* pOut = m_outputParticle[channel];
             Particle* pIn = m_inputParticle[channel];
@@ -298,7 +297,7 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
             }
 
             pFix->position() = Vector3D(0.0, 0.0, 0.0);
-            pIn->position() = Vector3D(channelData[sample] + m_particleCount, 0.0, 0.0);
+            pIn->position() = Vector3D(channelData[sample] + m_particleCount + equilibriumFactor->getValue(), 0.0, 0.0);
 
             for(Spring& spring : m_springs[channel]) {
                 Particle* pa = spring.from;
@@ -307,7 +306,7 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
                 double diff = pb->position().x - pa->position().x;
                 double r = fabs(diff);
 
-                double d = 1.0;
+                double d = spring.d;
                 double k = spring.k*springConstant->getValue();
 
                 Vector3D force = Vector3D(k*(r-d), 0.0, 0.0);
@@ -442,7 +441,7 @@ bool JuceDemoPluginAudioProcessor::silenceInProducesSilenceOut() const
 
 double JuceDemoPluginAudioProcessor::getTailLengthSeconds() const
 {
-    return 0.0;
+    return 5.0;
 }
 
 //==============================================================================

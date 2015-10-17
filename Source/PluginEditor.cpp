@@ -26,7 +26,7 @@ JuceDemoPluginAudioProcessorEditor::JuceDemoPluginAudioProcessorEditor (JuceDemo
     addAndMakeVisible (equilibriumSlider);
     equilibriumSlider.setSliderStyle (Slider::Rotary);
     equilibriumSlider.addListener (this);
-    equilibriumSlider.setRange (0.0, 2.0, 0.01);
+    equilibriumSlider.setRange (0.0, 10.0, 0.01);
 
     addAndMakeVisible (lennardSlider);
     lennardSlider.setSliderStyle (Slider::Rotary);
