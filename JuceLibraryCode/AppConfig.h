@@ -205,13 +205,13 @@
  #define JucePlugin_Build_AAX              0
 #endif
 #ifndef  JucePlugin_Name
- #define JucePlugin_Name                   "Dragly Test Plugin"
+ #define JucePlugin_Name                   "Spring All Year"
 #endif
 #ifndef  JucePlugin_Desc
- #define JucePlugin_Desc                   "Dragly Test Plugin"
+ #define JucePlugin_Desc                   "Spring All Year"
 #endif
 #ifndef  JucePlugin_Manufacturer
- #define JucePlugin_Manufacturer           "Dragly"
+ #define JucePlugin_Manufacturer           "Sounds of Physics"
 #endif
 #ifndef  JucePlugin_ManufacturerWebsite
  #define JucePlugin_ManufacturerWebsite    "dragly.org"
@@ -220,10 +220,10 @@
  #define JucePlugin_ManufacturerEmail      "s@dragly.com"
 #endif
 #ifndef  JucePlugin_ManufacturerCode
- #define JucePlugin_ManufacturerCode       'dgly'
+ #define JucePlugin_ManufacturerCode       'soph'
 #endif
 #ifndef  JucePlugin_PluginCode
- #define JucePlugin_PluginCode             'tplg'
+ #define JucePlugin_PluginCode             'say'
 #endif
 #ifndef  JucePlugin_MaxNumInputChannels
  #define JucePlugin_MaxNumInputChannels    2
@@ -250,13 +250,13 @@
  #define JucePlugin_EditorRequiresKeyboardFocus  1
 #endif
 #ifndef  JucePlugin_Version
- #define JucePlugin_Version                1.0.0
+ #define JucePlugin_Version                0.1.0
 #endif
 #ifndef  JucePlugin_VersionCode
- #define JucePlugin_VersionCode            0x10000
+ #define JucePlugin_VersionCode            0x100
 #endif
 #ifndef  JucePlugin_VersionString
- #define JucePlugin_VersionString          "1.0.0"
+ #define JucePlugin_VersionString          "0.1.0"
 #endif
 #ifndef  JucePlugin_VSTUniqueID
  #define JucePlugin_VSTUniqueID            JucePlugin_PluginCode
@@ -271,16 +271,16 @@
  #define JucePlugin_AUSubType              JucePlugin_PluginCode
 #endif
 #ifndef  JucePlugin_AUExportPrefix
- #define JucePlugin_AUExportPrefix         DraglyTestPluginAU
+ #define JucePlugin_AUExportPrefix         SpringAllYearAU
 #endif
 #ifndef  JucePlugin_AUExportPrefixQuoted
- #define JucePlugin_AUExportPrefixQuoted   "DraglyTestPluginAU"
+ #define JucePlugin_AUExportPrefixQuoted   "SpringAllYearAU"
 #endif
 #ifndef  JucePlugin_AUManufacturerCode
  #define JucePlugin_AUManufacturerCode     JucePlugin_ManufacturerCode
 #endif
 #ifndef  JucePlugin_CFBundleIdentifier
- #define JucePlugin_CFBundleIdentifier     org.dragly.testplugin
+ #define JucePlugin_CFBundleIdentifier     org.soundsofphysics.springallyear
 #endif
 #ifndef  JucePlugin_RTASCategory
  #define JucePlugin_RTASCategory           ePlugInCategory_None

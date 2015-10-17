@@ -12,72 +12,9 @@
 #define __PLUGINPROCESSOR_H_526ED7A9__
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "Vector3D.h"
 
 #include <deque>
-
-// Geometry Declarations
-class Vector3D {
-public:
-    // Vector Public Methods
-    Vector3D() { x = y = z = 0.f; }
-    Vector3D(float xx, float yy, float zz)
-        : x(xx), y(yy), z(zz) {
-    }
-    bool HasNaNs() const { return isnan(x) || isnan(y) || isnan(z); }
-    Vector3D operator+(const Vector3D &v) const {
-        return Vector3D(x + v.x, y + v.y, z + v.z);
-    }
-
-    Vector3D& operator+=(const Vector3D &v) {
-        x += v.x; y += v.y; z += v.z;
-        return *this;
-    }
-    Vector3D operator-(const Vector3D &v) const {
-        return Vector3D(x - v.x, y - v.y, z - v.z);
-    }
-
-    Vector3D& operator-=(const Vector3D &v) {
-        x -= v.x; y -= v.y; z -= v.z;
-        return *this;
-    }
-    Vector3D operator*(float f) const { return Vector3D(f*x, f*y, f*z); }
-
-    Vector3D &operator*=(float f) {
-        x *= f; y *= f; z *= f;
-        return *this;
-    }
-    Vector3D operator/(float f) const {
-        float inv = 1.f / f;
-        return Vector3D(x * inv, y * inv, z * inv);
-    }
-
-    Vector3D &operator/=(float f) {
-        float inv = 1.f / f;
-        x *= inv; y *= inv; z *= inv;
-        return *this;
-    }
-    Vector3D operator-() const { return Vector3D(-x, -y, -z); }
-    float operator[](int i) const {
-        return (&x)[i];
-    }
-
-    float &operator[](int i) {
-        return (&x)[i];
-    }
-    float LengthSquared() const { return x*x + y*y + z*z; }
-    float Length() const { return sqrt(LengthSquared()); }
-
-    bool operator==(const Vector3D &v) const {
-        return x == v.x && y == v.y && z == v.z;
-    }
-    bool operator!=(const Vector3D &v) const {
-        return x != v.x || y != v.y || z != v.z;
-    }
-    friend std::ostream& operator<< (std::ostream &out, const Vector3D &vector);
-
-    // Vector Public Data
-    float x, y, z;
-};
 
 class Particle
 {

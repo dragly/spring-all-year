@@ -12,9 +12,13 @@ JuceLibraryCode/modules/juce_gui_basics/juce_gui_basics.h
 JuceLibraryCode/modules/juce_gui_extra/juce_gui_extra.h
 JuceLibraryCode/AppConfig.h
 JuceLibraryCode/JuceHeader.h
-Source/NewComponent.cpp
-Source/NewComponent.h
 Source/PluginEditor.cpp
 Source/PluginEditor.h
 Source/PluginProcessor.cpp
 Source/PluginProcessor.h
+Source/SineWaveSound.h
+Source/SineWaveSound.cpp
+Source/Vector3D.h
+Source/Vector3D.cpp
+Source/FloatParameter.h
+Source/FloatParameter.cpp

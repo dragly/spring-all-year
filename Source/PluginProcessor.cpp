@@ -10,173 +10,10 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SineWaveSound.h"
+#include "FloatParameter.h"
 
 AudioProcessor* JUCE_CALLTYPE createPluginFilter();
-
-
-//==============================================================================
-/** A demo synth sound that's just a basic sine wave.. */
-class SineWaveSound : public SynthesiserSound
-{
-public:
-    SineWaveSound() {}
-
-    bool appliesToNote (int /*midiNoteNumber*/) override  { return true; }
-    bool appliesToChannel (int /*midiChannel*/) override  { return true; }
-};
-
-//==============================================================================
-/** A simple demo synth voice that just plays a sine wave.. */
-class SineWaveVoice  : public SynthesiserVoice
-{
-public:
-    SineWaveVoice()
-        : angleDelta (0.0),
-          tailOff (0.0)
-    {
-    }
-
-    bool canPlaySound (SynthesiserSound* sound) override
-    {
-        return dynamic_cast<SineWaveSound*> (sound) != nullptr;
-    }
-
-    void startNote (int midiNoteNumber, float velocity,
-                    SynthesiserSound* /*sound*/,
-                    int /*currentPitchWheelPosition*/) override
-    {
-        currentAngle = 0.0;
-        level = velocity * 0.15;
-        tailOff = 0.0;
-
-        double cyclesPerSecond = MidiMessage::getMidiNoteInHertz (midiNoteNumber);
-        double cyclesPerSample = cyclesPerSecond / getSampleRate();
-
-        angleDelta = cyclesPerSample * 2.0 * double_Pi;
-    }
-
-    void stopNote (float /*velocity*/, bool allowTailOff) override
-    {
-        if (allowTailOff)
-        {
-            // start a tail-off by setting this flag. The render callback will pick up on
-            // this and do a fade out, calling clearCurrentNote() when it's finished.
-
-            if (tailOff == 0.0) // we only need to begin a tail-off if it's not already doing so - the
-                // stopNote method could be called more than once.
-                tailOff = 1.0;
-        }
-        else
-        {
-            // we're being told to stop playing immediately, so reset everything..
-
-            clearCurrentNote();
-            angleDelta = 0.0;
-        }
-    }
-
-    void pitchWheelMoved (int /*newValue*/) override
-    {
-        // can't be bothered implementing this for the demo!
-    }
-
-    void controllerMoved (int /*controllerNumber*/, int /*newValue*/) override
-    {
-        // not interested in controllers in this case.
-    }
-
-    void renderNextBlock (AudioSampleBuffer& outputBuffer, int startSample, int numSamples) override
-    {
-        if (angleDelta != 0.0)
-        {
-            if (tailOff > 0)
-            {
-                while (--numSamples >= 0)
-                {
-                    const float currentSample = (float) (sin (currentAngle) * level * tailOff);
-
-                    for (int i = outputBuffer.getNumChannels(); --i >= 0;)
-                        outputBuffer.addSample (i, startSample, currentSample);
-
-                    currentAngle += angleDelta;
-                    ++startSample;
-
-                    tailOff *= 0.99;
-
-                    if (tailOff <= 0.005)
-                    {
-                        clearCurrentNote();
-
-                        angleDelta = 0.0;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                while (--numSamples >= 0)
-                {
-                    const float currentSample = (float) (sin (currentAngle) * level);
-
-                    for (int i = outputBuffer.getNumChannels(); --i >= 0;)
-                        outputBuffer.addSample (i, startSample, currentSample);
-
-                    currentAngle += angleDelta;
-                    ++startSample;
-                }
-            }
-        }
-    }
-
-private:
-    double currentAngle, angleDelta, level, tailOff;
-};
-
-class FloatParameter : public AudioProcessorParameter
-{
-public:
-
-    FloatParameter (float defaultParameterValue, const String& paramName)
-        : defaultValue (defaultParameterValue),
-          value (defaultParameterValue),
-          name (paramName)
-    {
-    }
-
-    float getValue() const override
-    {
-        return value;
-    }
-
-    void setValue (float newValue) override
-    {
-        value = newValue;
-    }
-
-    float getDefaultValue() const override
-    {
-        return defaultValue;
-    }
-
-    String getName (int /* maximumStringLength */) const override
-    {
-        return name;
-    }
-
-    String getLabel() const override
-    {
-        return String();
-    }
-
-    float getValueForText (const String& text) const override
-    {
-        return text.getFloatValue();
-    }
-
-private:
-    float defaultValue, value;
-    String name;
-};
 
 const float defaultGain = 1.0f;
 const float defaultDelay = 0.5f;
@@ -287,6 +124,11 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
         float* channelData = buffer.getWritePointer (channel);
         std::deque<Particle> &particles = m_particles[channel];
         for(int sample = 0; sample < numSamples; sample++) {
+            for(Particle& p : particles) {
+                p.velocity() += p.acceleration() * 0.1 * 0.5;
+                p.position() += p.velocity() * 0.1;
+            }
+
             Particle* pFix = m_fixedParticle[channel];
             Particle* pOut = m_outputParticle[channel];
             Particle* pIn = m_inputParticle[channel];
@@ -315,8 +157,7 @@ void JuceDemoPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
 
             for(Particle& p : particles) {
                 p.velocity() *= velocityFactor->getValue();
-                p.velocity() += p.acceleration() * 0.1;
-                p.position() += p.velocity() * 0.1;
+                p.velocity() += p.acceleration() * 0.1 * 0.5;
             }
 
             channelData[sample] = pOut->position().x - 1.0;
